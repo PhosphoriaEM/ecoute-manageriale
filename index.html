@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Savez-vous écouter votre équipe ?</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #f4f7fb;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    color: #111;
+  }
+  .wrap { max-width: 720px; width: 100%; }
+
+  /* Header */
+  .header {
+    background: #0f2d55;
+    border-radius: 12px;
+    padding: 2rem 2rem 1.75rem;
+    margin-bottom: 1.75rem;
+    color: white;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 0.5px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    margin-bottom: 1rem;
+    letter-spacing: 0.04em;
+  }
+  .header h1 { font-size: 22px; font-weight: 500; margin-bottom: 0.6rem; }
+  .header p { font-size: 14px; line-height: 1.65; opacity: 0.88; }
+  .anon-note {
+    margin-top: 1.25rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 12.5px;
+    opacity: 0.9;
+    border-left: 3px solid rgba(255,255,255,0.4);
+    line-height: 1.55;
+  }
+
+  /* Progress */
+  .progress-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+  .progress-bar { height: 4px; background: #dde6f0; border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+  .progress-fill { height: 100%; background: #1a5fa8; border-radius: 2px; transition: width 0.35s ease; }
+
+  /* Question card */
+  .question-card {
+    background: #fff;
+    border: 0.5px solid #dde4ee;
+    border-radius: 12px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+  }
+  .question-card.answered { border-color: #1a5fa8; }
+  .q-num {
+    font-size: 11px;
+    font-weight: 500;
+    color: #1a5fa8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+  .q-text { font-size: 15.5px; color: #111; line-height: 1.55; margin-bottom: 1.25rem; }
+
+  /* Options */
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 520px) { .options { grid-template-columns: 1fr; } }
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 0.5px solid #dde4ee;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #333;
+    transition: all 0.15s;
+    background: #f7f9fc;
+    line-height: 1.45;
+    user-select: none;
+  }
+  .opt:hover { border-color: #1a5fa8; background: #e8f0fb; }
+  .opt.selected { background: #1a5fa8; color: #fff; border-color: #1a5fa8; }
+  .opt input[type="radio"] { display: none; }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    gap: 1rem;
+  }
+  .btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.15s;
+    border: 0.5px solid #1a5fa8;
+  }
+  .btn-primary { background: #1a5fa8; color: #fff; }
+  .btn-primary:hover { background: #0f2d55; border-color: #0f2d55; }
+  .btn-primary:disabled { background: #8fb3d6; border-color: #8fb3d6; cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: #1a5fa8; }
+  .btn-secondary:hover { background: #e8f0fb; }
+  .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Results */
+  #result-section { display: none; }
+  .result-card {
+    background: #fff;
+    border: 0.5px solid #dde4ee;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .result-header {
+    background: #0f2d55;
+    color: #fff;
+    padding: 1.5rem 1.75rem;
+  }
+  .score-row { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.5rem; }
+  .score-big { font-size: 48px; font-weight: 500; line-height: 1; }
+  .result-title { font-size: 18px; font-weight: 500; }
+  .result-subtitle { font-size: 13px; opacity: 0.82; margin-top: 4px; }
+  .result-body { padding: 1.5rem 1.75rem; }
+  .result-body p { font-size: 14.5px; line-height: 1.7; color: #222; margin-bottom: 1rem; }
+  .result-body p:last-child { margin-bottom: 0; }
+
+  /* Dimension bars */
+  .dim-section {
+    background: #fff;
+    border: 0.5px solid #dde4ee;
+    border-radius: 12px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .dim-section-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 1rem;
+  }
+  .dim-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dim-label { width: 170px; font-size: 13px; color: #444; flex-shrink: 0; }
+  .dim-track { flex: 1; height: 6px; background: #dde6f0; border-radius: 3px; overflow: hidden; }
+  .dim-fill { height: 100%; border-radius: 3px; background: #1a5fa8; transition: width 0.7s ease; }
+  .dim-pct { font-size: 12px; font-weight: 500; color: #1a5fa8; min-width: 38px; text-align: right; }
+
+  /* Tip box */
+  .tip-box {
+    background: #e8f0fb;
+    border-left: 3px solid #1a5fa8;
+    border-radius: 0 8px 8px 0;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .tip-box strong {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #1a5fa8;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+  }
+  .tip-box p { font-size: 13.5px; color: #0f2d55; line-height: 1.65; }
+
+  .restart-wrap { text-align: center; padding-bottom: 1rem; }
+  .footer-note {
+    text-align: center;
+    font-size: 11.5px;
+    color: #999;
+    margin-top: 2rem;
+    padding-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">Atelier · Développement managérial</div>
+    <h1>Savez-vous écouter votre équipe ?</h1>
+    <p>Ce questionnaire vous permet d'explorer votre style d'écoute en tant que manager. Prenez le temps de répondre spontanément, sans chercher la « bonne » réponse — c'est votre pratique réelle qui compte.</p>
+    <div class="anon-note">
+      Ce questionnaire est entièrement anonyme. Aucune donnée personnelle n'est collectée, aucun résultat n'est enregistré ni transmis à qui que ce soit.
+    </div>
+  </div>
+
+  <!-- Quiz -->
+  <div id="quiz-section">
+    <div class="progress-label" id="prog-label">Question 1 sur 20</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:5%"></div></div>
+    <div id="question-container"></div>
+    <div class="nav">
+      <button class="btn btn-secondary" id="btn-prev" onclick="navigate(-1)" disabled>← Précédent</button>
+      <button class="btn btn-primary" id="btn-next" onclick="navigate(1)" disabled>Suivant →</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="result-section">
+    <div class="result-card">
+      <div class="result-header">
+        <div class="score-row">
+          <div class="score-big" id="res-score"></div>
+          <div>
+            <div class="result-title" id="res-title"></div>
+            <div class="result-subtitle" id="res-sub"></div>
+          </div>
+        </div>
+      </div>
+      <div class="result-body" id="res-body"></div>
+    </div>
+
+    <div class="dim-section">
+      <div class="dim-section-title">Détail par dimension</div>
+      <div id="dim-bars"></div>
+    </div>
+
+    <div class="tip-box">
+      <strong>Pour aller plus loin</strong>
+      <p id="res-tip"></p>
+    </div>
+
+    <div class="restart-wrap">
+      <button class="btn btn-secondary" onclick="restart()">Recommencer le questionnaire</button>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Test de positionnement · Session Cadres Supérieurs &amp; Cadres de Santé · Développer sa communication managériale
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    text: "Lorsqu'un collaborateur vient vous voir avec un problème, vous…",
+    opts: [
+      { label: "L'écoutez jusqu'au bout avant de réagir", score: 0, dim: "attention" },
+      { label: "Commencez à réfléchir à une solution pendant qu'il parle", score: 1, dim: "attention" },
+      { label: "L'interrompez dès que vous voyez où il veut en venir", score: 2, dim: "attention" },
+      { label: "Regardez vos mails en l'écoutant d'une oreille", score: 3, dim: "attention" }
+    ]
+  },
+  {
+    text: "En réunion d'équipe, quand quelqu'un exprime un désaccord, vous…",
+    opts: [
+      { label: "Cherchez d'abord à comprendre son point de vue", score: 0, dim: "ouverture" },
+      { label: "Réfutez poliment mais rapidement", score: 1, dim: "ouverture" },
+      { label: "Attendez que ça passe pour reprendre le fil", score: 2, dim: "ouverture" },
+      { label: "Avez du mal à masquer votre impatience", score: 3, dim: "ouverture" }
+    ]
+  },
+  {
+    text: "Après un entretien individuel, vous êtes généralement capable de…",
+    opts: [
+      { label: "Résumer précisément ce que votre collaborateur a dit", score: 0, dim: "mémorisation" },
+      { label: "Retenir les points essentiels", score: 1, dim: "mémorisation" },
+      { label: "Retenir surtout ce qui vous concernait directement", score: 2, dim: "mémorisation" },
+      { label: "Avoir du mal à vous souvenir des détails", score: 3, dim: "mémorisation" }
+    ]
+  },
+  {
+    text: "Quand un collaborateur semble préoccupé sans en parler spontanément, vous…",
+    opts: [
+      { label: "Créez une occasion pour aborder le sujet", score: 0, dim: "empathie" },
+      { label: "Attendez qu'il prenne l'initiative", score: 1, dim: "empathie" },
+      { label: "Le remarquez mais pensez que ce n'est pas votre rôle", score: 2, dim: "empathie" },
+      { label: "Ne le remarquez souvent pas", score: 3, dim: "empathie" }
+    ]
+  },
+  {
+    text: "Lorsqu'un membre de votre équipe vous fait un retour critique sur votre management, vous…",
+    opts: [
+      { label: "Accueillez ce retour avec intérêt", score: 0, dim: "ouverture" },
+      { label: "L'écoutez mais restez sur la défensive en interne", score: 1, dim: "ouverture" },
+      { label: "Relativisez rapidement ce qu'il dit", score: 2, dim: "ouverture" },
+      { label: "Avez du mal à ne pas vous sentir attaqué", score: 3, dim: "ouverture" }
+    ]
+  },
+  {
+    text: "Pour vous assurer d'avoir bien compris un collaborateur, vous…",
+    opts: [
+      { label: "Reformulez ce qu'il a dit pour vérifier", score: 0, dim: "reformulation" },
+      { label: "Posez quelques questions de précision", score: 1, dim: "reformulation" },
+      { label: "Supposez avoir compris et passez à la suite", score: 2, dim: "reformulation" },
+      { label: "Faites confiance à votre première interprétation", score: 3, dim: "reformulation" }
+    ]
+  },
+  {
+    text: "Votre collaborateur utilise des mots vagues (« ça ne va pas », « c'est compliqué »). Vous…",
+    opts: [
+      { label: "L'invitez à préciser ce qu'il ressent", score: 0, dim: "reformulation" },
+      { label: "Interprétez selon votre expérience", score: 1, dim: "reformulation" },
+      { label: "Passez à la solution sans creuser", score: 2, dim: "reformulation" },
+      { label: "Trouvez ça trop flou et coupez court", score: 3, dim: "reformulation" }
+    ]
+  },
+  {
+    text: "Quand vous avez beaucoup de travail, les sollicitations de vos collaborateurs…",
+    opts: [
+      { label: "Restent toujours les bienvenues, vous gérez", score: 0, dim: "disponibilité" },
+      { label: "Sont acceptées mais traitées en mode express", score: 1, dim: "disponibilité" },
+      { label: "Sont remises à plus tard systématiquement", score: 2, dim: "disponibilité" },
+      { label: "Vous agacent, même si vous le cachez", score: 3, dim: "disponibilité" }
+    ]
+  },
+  {
+    text: "Lors d'une conversation tendue avec un collaborateur, votre posture physique est…",
+    opts: [
+      { label: "Ouverte, tournée vers votre interlocuteur", score: 0, dim: "empathie" },
+      { label: "Neutre mais peu expressive", score: 1, dim: "empathie" },
+      { label: "Fermée (bras croisés, regard détourné)", score: 2, dim: "empathie" },
+      { label: "Vous n'y pensez pas vraiment", score: 3, dim: "empathie" }
+    ]
+  },
+  {
+    text: "Vous estimez que la parole de vos collaborateurs…",
+    opts: [
+      { label: "Est une source précieuse d'information terrain", score: 0, dim: "ouverture" },
+      { label: "Est utile quand elle rejoint vos propres constats", score: 1, dim: "ouverture" },
+      { label: "Doit être filtrée, certains ont tendance à exagérer", score: 2, dim: "ouverture" },
+      { label: "Reflète souvent des opinions plus que des faits", score: 3, dim: "ouverture" }
+    ]
+  },
+  {
+    text: "Combien de fois par semaine prenez-vous l'initiative de demander comment va votre équipe ?",
+    opts: [
+      { label: "Presque chaque jour", score: 0, dim: "disponibilité" },
+      { label: "Deux à trois fois par semaine", score: 1, dim: "disponibilité" },
+      { label: "Une fois, si l'occasion se présente", score: 2, dim: "disponibilité" },
+      { label: "Rarement, c'est à eux de venir", score: 3, dim: "disponibilité" }
+    ]
+  },
+  {
+    text: "Un collaborateur vous parle de ses difficultés personnelles impactant son travail. Vous…",
+    opts: [
+      { label: "L'écoutez avec bienveillance, puis cherchez comment aider", score: 0, dim: "empathie" },
+      { label: "Exprimez de la compréhension mais recentrez vite sur le travail", score: 1, dim: "empathie" },
+      { label: "Renvoyez vers les RH ou la médecine du travail", score: 2, dim: "empathie" },
+      { label: "Êtes mal à l'aise avec ce type d'échange", score: 3, dim: "empathie" }
+    ]
+  },
+  {
+    text: "Votre collaborateur hésite, cherche ses mots. Vous…",
+    opts: [
+      { label: "Lui laissez le temps sans l'interrompre", score: 0, dim: "attention" },
+      { label: "L'aidez parfois en finissant sa phrase", score: 1, dim: "attention" },
+      { label: "Finissez souvent ses phrases pour accélérer", score: 2, dim: "attention" },
+      { label: "Avez du mal à masquer votre impatience", score: 3, dim: "attention" }
+    ]
+  },
+  {
+    text: "Lorsque vous prenez une décision qui touche votre équipe, vous…",
+    opts: [
+      { label: "Consultez au préalable les personnes concernées", score: 0, dim: "participation" },
+      { label: "Informez avant la mise en œuvre", score: 1, dim: "participation" },
+      { label: "Expliquez après coup si nécessaire", score: 2, dim: "participation" },
+      { label: "Considérez que c'est votre rôle de décider seul", score: 3, dim: "participation" }
+    ]
+  },
+  {
+    text: "Quand un collaborateur répète une demande que vous avez déjà rejetée, vous…",
+    opts: [
+      { label: "Cherchez à comprendre pourquoi il insiste", score: 0, dim: "ouverture" },
+      { label: "Réexplicitez votre refus posément", score: 1, dim: "ouverture" },
+      { label: "Fermez la discussion clairement", score: 2, dim: "ouverture" },
+      { label: "Ressentez de l'irritation", score: 3, dim: "ouverture" }
+    ]
+  },
+  {
+    text: "Votre collaborateur ne partage pas votre avis. Votre réaction naturelle est de…",
+    opts: [
+      { label: "Explorer les raisons de sa position", score: 0, dim: "ouverture" },
+      { label: "Argumenter pour le convaincre", score: 1, dim: "ouverture" },
+      { label: "Trancher rapidement", score: 2, dim: "ouverture" },
+      { label: "Considérer qu'il n'a pas assez d'expérience", score: 3, dim: "ouverture" }
+    ]
+  },
+  {
+    text: "Vos collaborateurs vous font-ils facilement part de leurs doutes ou erreurs ?",
+    opts: [
+      { label: "Oui, ils semblent à l'aise pour le faire", score: 0, dim: "participation" },
+      { label: "Plutôt oui, mais certains hésitent encore", score: 1, dim: "participation" },
+      { label: "Rarement, ils préfèrent gérer seuls", score: 2, dim: "participation" },
+      { label: "Non, et ça ne me préoccupe pas", score: 3, dim: "participation" }
+    ]
+  },
+  {
+    text: "Lors d'un brainstorming ou d'une réunion d'équipe, vous…",
+    opts: [
+      { label: "Veillez à ce que chacun puisse s'exprimer", score: 0, dim: "participation" },
+      { label: "Donnez la parole aux plus à l'aise", score: 1, dim: "participation" },
+      { label: "Pilotez activement et parlez beaucoup", score: 2, dim: "participation" },
+      { label: "Avez du mal à laisser de longs silences", score: 3, dim: "participation" }
+    ]
+  },
+  {
+    text: "Après un feedback donné à un collaborateur, vous…",
+    opts: [
+      { label: "Demandez comment il a reçu ce que vous avez dit", score: 0, dim: "reformulation" },
+      { label: "Attendez de voir les changements dans son travail", score: 1, dim: "reformulation" },
+      { label: "Estimez que c'est à lui de faire le bilan", score: 2, dim: "reformulation" },
+      { label: "Passez à autre chose une fois le feedback donné", score: 3, dim: "reformulation" }
+    ]
+  },
+  {
+    text: "Si vous deviez vous évaluer honnêtement, votre capacité d'écoute au quotidien est…",
+    opts: [
+      { label: "Un de vos points forts reconnus", score: 0, dim: "mémorisation" },
+      { label: "Correcte mais perfectible", score: 1, dim: "mémorisation" },
+      { label: "Variable selon votre charge et votre humeur", score: 2, dim: "mémorisation" },
+      { label: "Clairement un axe de progrès", score: 3, dim: "mémorisation" }
+    ]
+  }
+];
+
+const DIMS = ["attention", "ouverture", "empathie", "disponibilité", "reformulation", "mémorisation", "participation"];
+const DIM_LABELS = {
+  attention: "Qualité d'attention",
+  ouverture: "Ouverture d'esprit",
+  empathie: "Empathie",
+  disponibilité: "Disponibilité",
+  reformulation: "Reformulation",
+  mémorisation: "Mémorisation",
+  participation: "Participation collective"
+};
+
+let current = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+
+function render() {
+  const q = QUESTIONS[current];
+  const pct = Math.round(((current + 1) / QUESTIONS.length) * 100);
+  document.getElementById("prog-label").textContent = "Question " + (current + 1) + " sur " + QUESTIONS.length;
+  document.getElementById("prog-fill").style.width = pct + "%";
+  document.getElementById("btn-prev").disabled = current === 0;
+  const isLast = current === QUESTIONS.length - 1;
+  const nextBtn = document.getElementById("btn-next");
+  nextBtn.textContent = isLast ? "Voir mes résultats" : "Suivant →";
+  nextBtn.disabled = answers[current] === null;
+
+  let optsHtml = '';
+  q.opts.forEach(function(o, i) {
+    optsHtml += '<label class="opt' + (answers[current] === i ? ' selected' : '') + '" onclick="selectOpt(' + i + ')">' +
+      '<input type="radio" name="q" value="' + i + '" ' + (answers[current] === i ? 'checked' : '') + ' />' +
+      o.label + '</label>';
+  });
+
+  document.getElementById("question-container").innerHTML =
+    '<div class="question-card' + (answers[current] !== null ? ' answered' : '') + '">' +
+    '<div class="q-num">Question ' + (current + 1) + '</div>' +
+    '<div class="q-text">' + q.text + '</div>' +
+    '<div class="options">' + optsHtml + '</div>' +
+    '</div>';
+}
+
+function selectOpt(i) {
+  answers[current] = i;
+  render();
+}
+
+function navigate(dir) {
+  const isLast = current === QUESTIONS.length - 1;
+  if (dir === 1 && isLast) { showResult(); return; }
+  if (dir === 1 && current < QUESTIONS.length - 1) current++;
+  if (dir === -1 && current > 0) current--;
+  render();
+}
+
+function showResult() {
+  var total = 0;
+  var dimScores = {}, dimMax = {};
+  DIMS.forEach(function(d) { dimScores[d] = 0; dimMax[d] = 0; });
+
+  QUESTIONS.forEach(function(q, i) {
+    var a = answers[i];
+    if (a === null) return;
+    var score = q.opts[a].score;
+    var dim = q.opts[a].dim;
+    total += score;
+    dimScores[dim] += score;
+    dimMax[dim] += 3;
+  });
+
+  var max = QUESTIONS.length * 3;
+  var pct = Math.round((1 - total / max) * 100);
+
+  var title, sub, body, tip;
+  if (total <= 15) {
+    title = "Écoute active et engagée";
+    sub = "Vous êtes un manager à l'écoute";
+    body = "<p>Votre profil révèle une réelle qualité d'écoute managériale. Vous créez naturellement un espace de parole sécurisant pour vos collaborateurs, ce qui favorise la confiance, la transparence et l'engagement au sein de votre équipe.</p><p>Vous avez compris que bien écouter, c'est d'abord suspendre son propre jugement pour accueillir pleinement ce que l'autre a à dire. Cette posture est un levier de performance collective souvent sous-estimé.</p>";
+    tip = "Continuez à vous appuyer sur la reformulation et le questionnement ouvert. Pensez également à rendre visible votre écoute — parfois, vos collaborateurs ne perçoivent pas à quel point vous êtes attentif.";
+  } else if (total <= 30) {
+    title = "Écoute sélective";
+    sub = "Une écoute réelle, mais discontinue";
+    body = "<p>Vous êtes capable d'une bonne qualité d'écoute, mais elle n'est pas systématique. Vous tendez à évaluer les propos en cours d'échange, parfois à anticiper les conclusions avant que votre interlocuteur ait terminé de s'exprimer.</p><p>Ce mode d'écoute partiel peut créer un sentiment de ne pas être vraiment entendu chez vos collaborateurs, même lorsque vous avez suivi l'essentiel du message.</p>";
+    tip = "Exercez-vous à vous taire un peu plus longtemps. Avant de répondre, posez systématiquement au moins une question de compréhension. La reformulation (« si je comprends bien… ») est un outil simple et puissant pour signaler à l'autre qu'on l'a vraiment suivi.";
+  } else {
+    title = "Écoute à développer";
+    sub = "Un axe de progression significatif";
+    body = "<p>Votre capacité d'écoute est actuellement limitée par plusieurs obstacles : charge mentale, tendance à prioriser l'action sur la compréhension, inconfort face à certaines émotions ou situations. Ces freins sont courants et tout à fait travaillables.</p><p>Le risque à terme est de passer à côté d'informations importantes, de générer de la distance avec votre équipe, ou de prendre des décisions sans avoir bien cerné la réalité du terrain.</p>";
+    tip = "Commencez par un changement simple : quand un collaborateur vous sollicite, posez ce que vous faites, tournez-vous vers lui et regardez-le. Cette posture physique change profondément la qualité de l'échange. Entraînez-vous ensuite à reformuler ce qu'on vient de vous dire avant de répondre.";
+  }
+
+  document.getElementById("res-score").textContent = pct + "%";
+  document.getElementById("res-title").textContent = title;
+  document.getElementById("res-sub").textContent = sub;
+  document.getElementById("res-body").innerHTML = body;
+  document.getElementById("res-tip").textContent = tip;
+
+  var barsHtml = '';
+  DIMS.forEach(function(d) {
+    if (dimMax[d] === 0) return;
+    var val = Math.round((1 - dimScores[d] / dimMax[d]) * 100);
+    barsHtml += '<div class="dim-row">' +
+      '<div class="dim-label">' + DIM_LABELS[d] + '</div>' +
+      '<div class="dim-track"><div class="dim-fill" style="width:' + val + '%"></div></div>' +
+      '<div class="dim-pct">' + val + '%</div>' +
+      '</div>';
+  });
+  document.getElementById("dim-bars").innerHTML = barsHtml;
+
+  document.getElementById("quiz-section").style.display = "none";
+  document.getElementById("result-section").style.display = "block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function restart() {
+  current = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  document.getElementById("result-section").style.display = "none";
+  document.getElementById("quiz-section").style.display = "block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
